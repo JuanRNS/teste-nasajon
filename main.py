@@ -10,7 +10,7 @@ load_dotenv()
 email = os.getenv("USER_EMAIL")
 password = os.getenv("USER_PASSWORD")
 api_key = os.getenv("API_KEY")
-
+# Função para obter token de acesso
 def get_acess_token():
     url_acess_token = "https://mynxlubykylncinttggu.supabase.co/auth/v1/token?grant_type=password"
     headers = {
@@ -135,10 +135,9 @@ def data_processing(acess_token):
     total_ok = (df_resultado['status'] == 'OK').sum()
     total_nao_encontrado = (df_resultado['status'] == 'NAO_ENCONTRADO').sum()
     total_erro_api = (df_resultado['status'] == 'ERRO_API').sum()
-    
     df_ok = df_resultado[df_resultado['status'] == 'OK']
     pop_total_ok = df_ok['populacao_input'].sum()
-    # Calculo 
+    # Calculo das estatísticas
     stats = {
         "total_municipios": int(total_municipios),
         "total_ok": int(total_ok),
@@ -156,12 +155,11 @@ def data_processing(acess_token):
     else:
         print("  Nenhum município OK para calcular médias.")
     
-
+    # Enviar dados para o Supabase
     url_post_ibge = "https://mynxlubykylncinttggu.functions.supabase.co/ibge-submit"
     payload = {
         "stats" : stats
     }
-        
     headers = {
         "Authorization": f"Bearer {acess_token}",
         "Content-Type": "application/json"
