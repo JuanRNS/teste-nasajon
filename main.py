@@ -70,6 +70,10 @@ def find_best_match(name, ibge_dict):
     if normalized_name in ibge_dict:
         matches = ibge_dict[normalized_name]
         if len(matches) > 1:
+            id_ibge_input = matches[0].get('id', '')
+            for m in matches:
+                if id_ibge_input == m.get('id', ''):
+                    return 'OK', m
             return 'AMBIGUO', None
         return 'OK', matches[0]
     
@@ -131,29 +135,27 @@ def data_processing(acess_token):
     stats = {}
 
     # Estatísticas
+    df_ok = df_resultado[df_resultado['status'] == 'OK'].copy()
+
+    df_ok['populacao_input'] = pd.to_numeric(df_ok['populacao_input'], errors='coerce')
+
     total_municipios = len(df_resultado)
-    total_ok = (df_resultado['status'] == 'OK').sum()
+    total_ok = len(df_ok)
     total_nao_encontrado = (df_resultado['status'] == 'NAO_ENCONTRADO').sum()
-    total_erro_api = (df_resultado['status'] == 'ERRO_API').sum()
-    df_ok = df_resultado[df_resultado['status'] == 'OK']
+
     pop_total_ok = df_ok['populacao_input'].sum()
-    # Calculo das estatísticas
+
+    medias_por_regiao = df_ok.groupby('regiao')['populacao_input'].mean()
+
     stats = {
         "total_municipios": int(total_municipios),
         "total_ok": int(total_ok),
         "total_nao_encontrado": int(total_nao_encontrado),
-        "total_erro_api": int(total_erro_api),
-        "pop_total_ok": float(pop_total_ok) if pd.notnull(pop_total_ok) else 0.0,
-        "medias_por_regiao": {}
+        "total_erro_api": int(0),
+        "pop_total_ok": float(pop_total_ok),
+        "medias_por_regiao": {reg: float(val) for reg, val in medias_por_regiao.items()}
     }
-    
-    if not df_ok.empty:
-        medias_por_regiao = df_ok.groupby('regiao')['populacao_input'].mean()
-        for regiao, media in medias_por_regiao.items():
-            if pd.notnull(media):
-                stats['medias_por_regiao'][regiao] = round(float(media), 2)
-    else:
-        print("  Nenhum município OK para calcular médias.")
+    print(stats)
     
     # Enviar dados para o Supabase
     url_post_ibge = "https://mynxlubykylncinttggu.functions.supabase.co/ibge-submit"
